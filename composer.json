@@ -1,0 +1,27 @@
+{
+  "name": "o2relax/graphql-client",
+  "description": "A graphql client for testing on laravel/lumen.",
+  "type": "library",
+  "keywords": [
+    "graphql",
+    "testing"
+  ],
+  "license": "BSD-3-Clause",
+  "authors": [
+    {
+      "name": "Murashkin Roman",
+      "email": "webmaster865@yandex.ru"
+    }
+  ],
+  "require": {
+    "php": "^7.0"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "6.*"
+  },
+  "autoload": {
+    "psr-0" : {
+      "GraphQLClient\\" : "src"
+    }
+  }
+}
