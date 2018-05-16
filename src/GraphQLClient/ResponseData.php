@@ -26,9 +26,9 @@ class ResponseData
     }
 
     /**
-     * @return array|null
+     * @return mixed
      */
-    public function getData() : ?array
+    public function getData()
     {
         return array_get($this->response, 'data.' . $this->query->getName());
     }
@@ -50,9 +50,9 @@ class ResponseData
     }
 
     /**
-     * @return array|null
+     * @return integer|null
      */
-    public function getCode() : ?array
+    public function getCode() : ?int
     {
         return array_get($this->response, 'errors.0.code');
     }
