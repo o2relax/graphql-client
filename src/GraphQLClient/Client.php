@@ -160,14 +160,14 @@ abstract class Client
         return $result;
     }
 
-    public function assertGraphQlFields(array $fields, Query $query)
+    public function assertGraphQlFields(array $fields, Query $query) : void
     {
         foreach ($query->getChildren() as $field) {
             $this->assertFieldInArray($field, $fields);
         }
     }
 
-    protected function assertFieldInArray(Field $field, array $result)
+    protected function assertFieldInArray(Field $field, array $result) : void
     {
         if ($this->hasStringKeys($result)) {
             Assert::assertArrayHasKey($field->getName(), $result);

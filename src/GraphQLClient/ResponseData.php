@@ -26,19 +26,33 @@ class ResponseData
     }
 
     /**
-     * @return mixed
+     * @return array|null
      */
-    public function getData()
+    public function getData() : ?array
     {
         return array_get($this->response, 'data.' . $this->query->getName());
     }
 
-    public function getErrors()
+    /**
+     * @return array|null
+     */
+    public function getResponse() : ?array
+    {
+        return $this->response;
+    }
+
+    /**
+     * @return array|null
+     */
+    public function getErrors() : ?array
     {
         return array_get($this->response, 'errors.0');
     }
 
-    public function getCode()
+    /**
+     * @return array|null
+     */
+    public function getCode() : ?array
     {
         return array_get($this->response, 'errors.0.code');
     }
