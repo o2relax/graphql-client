@@ -31,6 +31,12 @@ class LaravelTestGraphQLClient extends Client
         $this->app = $app;
     }
 
+    /**
+     * @param array $data
+     *
+     * @return array
+     * @throws GraphQLException
+     */
     protected function postQuery(array $data): array
     {
         $this->post($this->getBaseUrl(), $data);
@@ -43,14 +49,6 @@ class LaravelTestGraphQLClient extends Client
             ));
         }
 
-        $responseBody = json_decode($this->response->getContent(), true);
-
-        if (isset($responseBody['errors'])) {
-            throw new GraphQLException(sprintf(
-                'Mutation failed with error %s', json_encode($responseBody['errors'])
-            ));
-        }
-
-        return $responseBody;
+        return json_decode($this->response->getContent(), true);
     }
 }

@@ -24,9 +24,9 @@ class Query extends Field
      * @param array|Variable[] $variables
      * @return string
      */
-    public function getQueryHeader(array $variables)
+    public function getQueryHeader(array $variables) : string
     {
-        if (!count($variables)) {
+        if (!\count($variables)) {
             return '';
         }
 

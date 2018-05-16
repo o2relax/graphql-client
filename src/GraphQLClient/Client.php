@@ -60,7 +60,7 @@ abstract class Client
 
     private function hasStringKeys(array $array):bool
     {
-        return count(array_filter(array_keys($array), 'is_string')) > 0;
+        return \count(array_filter(array_keys($array), '\is_string')) > 0;
     }
 
     /**
@@ -72,10 +72,10 @@ abstract class Client
         $result = '';
 
         foreach ($params as $key => $value) {
-            if (is_string($key)) {
+            if (\is_string($key)) {
                 $result .= $key . ' : ';
             }
-            if (is_array($value)) {
+            if (\is_array($value)) {
                 if ($this->hasStringKeys($value)) {
                     $result .= sprintf('{ %s } ', $this->getParamString($value));
                 } else {
@@ -110,16 +110,14 @@ abstract class Client
         if ($query instanceof Query) {
             $paramString = '(' . $this->getParamString($query->getParams()) . ')';
         }
-        $queryString = sprintf('%s%s %s', $query->getName(), $paramString, $fieldString);
 
-
-        return $queryString;
+        return sprintf('%s%s %s', $query->getName(), $paramString, $fieldString);
 
     }
 
-    public function executeQuery(array $data, array $multipart = null)
+    public function executeQuery(array $data, array $multipart = null) : array
     {
-        if (is_array($multipart)) {
+        if (\is_array($multipart)) {
             $data = array_merge(['operations' => json_encode($data)], $multipart);
         }
 
@@ -129,14 +127,14 @@ abstract class Client
     public function mutate(Query $query, array $multipart = null): ResponseData
     {
         $response = $this->executeQuery($this->getMutationData($query), $multipart);
-        return new ResponseData($response['data'][$query->getName()]);
+        return new ResponseData($response, $query);
     }
 
     public function query(Query $query):ResponseData
     {
         $response = $this->executeQuery($this->getQueryData($query));
 
-        return new ResponseData($response['data'][$query->getName()]);
+        return new ResponseData($response, $query);
     }
 
     /**
@@ -151,7 +149,7 @@ abstract class Client
      * @param array|Variable[] $variables
      * @return array
      */
-    private function getVariableContent(array $variables)
+    private function getVariableContent(array $variables) : array
     {
         $result = [];
 

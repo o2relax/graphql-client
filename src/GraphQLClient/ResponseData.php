@@ -10,16 +10,19 @@ namespace GraphQLClient;
 class ResponseData
 {
     /** @var mixed */
-    private $data;
+    private $response;
+    private $query;
 
     /**
      * ResponseData constructor.
      *
-     * @param mixed $data
+     * @param       $response
+     * @param Query $query
      */
-    public function __construct($data)
+    public function __construct($response, Query $query)
     {
-        $this->data = $data;
+        $this->response = $response;
+        $this->query = $query;
     }
 
     /**
@@ -27,6 +30,16 @@ class ResponseData
      */
     public function getData()
     {
-        return $this->data;
+        return array_get($this->response, 'data.' . $this->query->getName());
+    }
+
+    public function getErrors()
+    {
+        return array_get($this->response, 'errors.0');
+    }
+
+    public function getCode()
+    {
+        return array_get($this->response, 'errors.0.code');
     }
 }

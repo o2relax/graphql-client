@@ -28,6 +28,12 @@ class SymfonyWebTestGraphQLClient extends Client
         $this->symfonyClient = $client;
     }
 
+    /**
+     * @param array $data
+     *
+     * @return array
+     * @throws GraphQLException
+     */
     protected function postQuery(array $data): array
     {
         $this->symfonyClient->request('POST', $this->getBaseUrl(), $data);
