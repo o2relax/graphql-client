@@ -2,6 +2,7 @@
 
 namespace GraphQLClient;
 
+use GraphQLClient\InternalTypes\BooleanType;
 use GraphQLClient\InternalTypes\IntegerType;
 use GraphQLClient\InternalTypes\StringType;
 use Laravel\Lumen\Testing\TestCase;
@@ -180,14 +181,17 @@ abstract class Client
         if ($this->hasStringKeys($result)) {
             Assert::assertArrayHasKey($field->getName(), $result);
             if ($result[$field->getName()] !== null) {
-                foreach ($field->getChildren() as $child) {
-                    $this->assertFieldInArray($child, $result[$field->getName()]);
+                if ($field->getChildren()) {
+                    foreach ($field->getChildren() as $child) {
+                        $this->assertFieldInArray($child, $result[$field->getName()]);
+                    }
+                } else {
+                    $this->assertInternalType($field, $result[$field->getName()]);
                 }
             }
         } else {
             foreach ($result as $element) {
                 $this->assertFieldInArray($field, $element);
-                $this->assertInternalType($field, $element);
             }
         }
     }
@@ -199,6 +203,8 @@ abstract class Client
                 TestCase::assertInternalType('integer', $element);
             } elseif ($field instanceof StringType) {
                 TestCase::assertInternalType('string', $element);
+            } elseif ($field instanceof BooleanType) {
+                TestCase::assertInternalType('boolean', $element);
             }
         }
     }
