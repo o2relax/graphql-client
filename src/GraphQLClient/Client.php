@@ -2,6 +2,9 @@
 
 namespace GraphQLClient;
 
+use GraphQLClient\InternalTypes\IntegerType;
+use GraphQLClient\InternalTypes\StringType;
+use Laravel\Lumen\Testing\TestCase;
 use PHPUnit\Framework\Assert;
 
 abstract class Client
@@ -12,21 +15,23 @@ abstract class Client
     /** @var array */
     protected $variables;
 
-    public function __construct(string $baseUrl) {
+    public function __construct(string $baseUrl)
+    {
         $this->baseUrl = $baseUrl;
         $this->variables = [];
     }
 
-    private function getQueryData(Query $query): array
+    private function getQueryData(Query $query) : array
     {
         $queryString = 'query { ' . $this->getQueryString($query) . ' }';
+
         return [
-            'query' => $queryString,
-            'variables' => null
+            'query'     => $queryString,
+            'variables' => null,
         ];
     }
 
-    private function getMutationData(Query $query): array
+    private function getMutationData(Query $query) : array
     {
         $queryBody = $this->getQueryString($query);
         $queryString = sprintf(
@@ -36,12 +41,12 @@ abstract class Client
         );
 
         return [
-            'query' => $queryString,
-            'variables' => $this->getVariableContent($this->variables)
+            'query'     => $queryString,
+            'variables' => $this->getVariableContent($this->variables),
         ];
     }
 
-    private function fieldToString(Field $field): string
+    private function fieldToString(Field $field) : string
     {
         $result = $field->getName();
 
@@ -53,21 +58,22 @@ abstract class Client
             $result .= sprintf(' { %s }', $children);
         }
 
-        $result .=  PHP_EOL;
+        $result .= PHP_EOL;
 
         return $result;
     }
 
-    private function hasStringKeys(array $array):bool
+    private function hasStringKeys(array $array) : bool
     {
         return \count(array_filter(array_keys($array), '\is_string')) > 0;
     }
 
     /**
      * @param array $params
+     *
      * @return string
      */
-    private function getParamString(array $params): string
+    private function getParamString(array $params) : string
     {
         $result = '';
 
@@ -81,19 +87,20 @@ abstract class Client
                 } else {
                     $result .= sprintf('[ %s ] ', $this->getParamString($value));
                 }
-            } else if ($value instanceof Variable) {
-                $result .= sprintf('$%s ', $value->getName());
-                $this->variables[$value->getName()] = $value;
             } else {
-                $result .= sprintf('%s ', json_encode($value));
+                if ($value instanceof Variable) {
+                    $result .= sprintf('$%s ', $value->getName());
+                    $this->variables[$value->getName()] = $value;
+                } else {
+                    $result .= sprintf('%s ', json_encode($value));
+                }
             }
-
         }
 
         return $result;
     }
 
-    private function getQueryString(Field $query): string
+    private function getQueryString(Field $query) : string
     {
         $fieldString = '';
 
@@ -112,7 +119,6 @@ abstract class Client
         }
 
         return sprintf('%s%s %s', $query->getName(), $paramString, $fieldString);
-
     }
 
     public function executeQuery(array $data, array $headers = [], array $multipart = null) : array
@@ -124,13 +130,14 @@ abstract class Client
         return $this->postQuery($data, $headers);
     }
 
-    public function mutate(Query $query, array $headers = [], array $multipart = null): ResponseData
+    public function mutate(Query $query, array $headers = [], array $multipart = null) : ResponseData
     {
         $response = $this->executeQuery($this->getMutationData($query), $headers, $multipart);
+
         return new ResponseData($response, $query);
     }
 
-    public function query(Query $query, array $headers = []):ResponseData
+    public function query(Query $query, array $headers = []) : ResponseData
     {
         $response = $this->executeQuery($this->getQueryData($query), $headers);
 
@@ -140,13 +147,14 @@ abstract class Client
     /**
      * @return string
      */
-    public function getBaseUrl(): string
+    public function getBaseUrl() : string
     {
         return $this->baseUrl;
     }
 
     /**
      * @param array|Variable[] $variables
+     *
      * @return array
      */
     private function getVariableContent(array $variables) : array
@@ -179,9 +187,21 @@ abstract class Client
         } else {
             foreach ($result as $element) {
                 $this->assertFieldInArray($field, $element);
+                $this->assertInternalType($field, $element);
             }
         }
     }
 
-    abstract protected function postQuery(array $data, array $headers = []): array;
+    protected function assertInternalType(Field $field, $element) : void
+    {
+        if ($field instanceof InternalType) {
+            if ($field instanceof IntegerType) {
+                TestCase::assertInternalType('integer', $element);
+            } elseif ($field instanceof StringType) {
+                TestCase::assertInternalType('string', $element);
+            }
+        }
+    }
+
+    abstract protected function postQuery(array $data, array $headers = []) : array;
 }

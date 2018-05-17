@@ -7,10 +7,10 @@ namespace GraphQLClient;
 class Field
 {
     /** @var Field[]|array */
-    private $children;
+    protected $children;
 
     /** @var string */
-    private $name;
+    protected $name;
 
     /**
      * Field constructor.
