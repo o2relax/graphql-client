@@ -2,6 +2,8 @@
 
 namespace GraphQLClient;
 
+use Illuminate\Support\Arr;
+
 /**
  * Class ResponseData
  *
@@ -30,7 +32,7 @@ class ResponseData
      */
     public function getData()
     {
-        return array_get($this->response, 'data.' . $this->query->getName());
+        return Arr::get($this->response, 'data.' . $this->query->getName());
     }
 
     /**
@@ -46,7 +48,7 @@ class ResponseData
      */
     public function getErrors() : ?array
     {
-        return array_get($this->response, 'errors.0');
+        return Arr::get($this->response, 'errors.0');
     }
 
     /**
@@ -54,6 +56,6 @@ class ResponseData
      */
     public function getCode() : ?int
     {
-        return array_get($this->response, 'errors.0.code');
+        return Arr::get($this->response, 'errors.0.code');
     }
 }

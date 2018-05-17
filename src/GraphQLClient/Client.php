@@ -107,7 +107,7 @@ abstract class Client
         }
 
         $paramString = '';
-        if ($query instanceof Query) {
+        if ($query instanceof Query && \count($query->getParams())) {
             $paramString = '(' . $this->getParamString($query->getParams()) . ')';
         }
 
@@ -115,24 +115,24 @@ abstract class Client
 
     }
 
-    public function executeQuery(array $data, array $multipart = null) : array
+    public function executeQuery(array $data, array $headers = [], array $multipart = null) : array
     {
         if (\is_array($multipart)) {
             $data = array_merge(['operations' => json_encode($data)], $multipart);
         }
 
-        return $this->postQuery($data);
+        return $this->postQuery($data, $headers);
     }
 
-    public function mutate(Query $query, array $multipart = null): ResponseData
+    public function mutate(Query $query, array $headers = [], array $multipart = null): ResponseData
     {
-        $response = $this->executeQuery($this->getMutationData($query), $multipart);
+        $response = $this->executeQuery($this->getMutationData($query), $headers, $multipart);
         return new ResponseData($response, $query);
     }
 
-    public function query(Query $query):ResponseData
+    public function query(Query $query, array $headers = []):ResponseData
     {
-        $response = $this->executeQuery($this->getQueryData($query));
+        $response = $this->executeQuery($this->getQueryData($query), $headers);
 
         return new ResponseData($response, $query);
     }
@@ -183,5 +183,5 @@ abstract class Client
         }
     }
 
-    abstract protected function postQuery(array $data): array;
+    abstract protected function postQuery(array $data, array $headers = []): array;
 }
