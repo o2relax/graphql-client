@@ -8,7 +8,7 @@ use GraphQLClient\InternalTypes\StringType;
 use Laravel\Lumen\Testing\TestCase;
 use PHPUnit\Framework\Assert;
 
-abstract class Client
+abstract class Request
 {
     /** @var string */
     protected $baseUrl;
@@ -22,9 +22,39 @@ abstract class Client
         $this->variables = [];
     }
 
-    private function getQueryData(Query $query) : array
+    public function query(array $queries, array $headers = []) : Response
     {
-        $queryString = 'query { ' . $this->getQueryString($query) . ' }';
+        $response = $this->executeQuery($this->getQueryData($queries), $headers);
+
+        return new Response($response, $queries);
+    }
+
+    public function mutate(Query $query, array $headers = [], array $multipart = null) : Response
+    {
+        $response = $this->executeQuery($this->getMutationData($query), $headers, $multipart);
+
+        return new Response($response, $query);
+    }
+
+    public function executeQuery(array $data, array $headers = [], array $multipart = null) : array
+    {
+        if (\is_array($multipart)) {
+            $data = array_merge(['operations' => json_encode($data)], $multipart);
+        }
+
+        return $this->postQuery($data, $headers);
+    }
+
+    private function getQueryData(array $queries) : array
+    {
+
+        $fieldsString = '';
+
+        foreach($queries as $query) {
+            $fieldsString .= $this->getQueryString($query);
+        }
+
+        $queryString = 'query { ' . $fieldsString . ' }';
 
         return [
             'query'     => $queryString,
@@ -47,26 +77,58 @@ abstract class Client
         ];
     }
 
-    private function fieldToString(Field $field) : string
+    /**
+     * @param array $data
+     *
+     * @param array $headers
+     *
+     * @return array
+     * @throws GraphQLException
+     */
+    protected function postQuery(array $data, array $headers = []) : array
     {
-        $result = $field->getName();
+        $this->post($this->getBaseUrl(), $data, $headers);
 
-        if (!empty($field->getChildren())) {
-            $children = '';
-            foreach ($field->getChildren() as $child) {
-                $children .= $this->fieldToString($child);
-            }
-            $result .= sprintf(' { %s }', $children);
+        if ($this->response->getStatusCode() >= 400) {
+            throw new GraphQLException(sprintf(
+                'Mutation failed with status code %d and error %s',
+                $this->response->getStatusCode(),
+                $this->response->getContent()
+            ));
         }
 
-        $result .= PHP_EOL;
-
-        return $result;
+        return json_decode($this->response->getContent(), true);
     }
 
-    private function hasStringKeys(array $array) : bool
+    /**
+     * @return string
+     */
+    public function getBaseUrl() : string
     {
-        return \count(array_filter(array_keys($array), '\is_string')) > 0;
+        return $this->baseUrl;
+    }
+
+
+
+    private function getQueryString(Field $query) : string
+    {
+        $fieldString = '';
+
+        if ($query->getChildren()) {
+            $fieldString .= '{';
+            foreach ($query->getChildren() as $field) {
+                $fieldString .= sprintf('%s', $this->getQueryString($field));
+                $fieldString .= PHP_EOL;
+            }
+            $fieldString .= '}';
+        }
+
+        $paramString = '';
+        if ($query instanceof Query && \count($query->getParams())) {
+            $paramString = '(' . $this->getParamString($query->getParams()) . ')';
+        }
+
+        return sprintf('%s%s %s', $query->getName(), $paramString, $fieldString);
     }
 
     /**
@@ -101,56 +163,9 @@ abstract class Client
         return $result;
     }
 
-    private function getQueryString(Field $query) : string
+    private function hasStringKeys(array $array) : bool
     {
-        $fieldString = '';
-
-        if ($query->getChildren()) {
-            $fieldString .= '{';
-            foreach ($query->getChildren() as $field) {
-                $fieldString .= sprintf('%s', $this->getQueryString($field));
-                $fieldString .= PHP_EOL;
-            }
-            $fieldString .= '}';
-        }
-
-        $paramString = '';
-        if ($query instanceof Query && \count($query->getParams())) {
-            $paramString = '(' . $this->getParamString($query->getParams()) . ')';
-        }
-
-        return sprintf('%s%s %s', $query->getName(), $paramString, $fieldString);
-    }
-
-    public function executeQuery(array $data, array $headers = [], array $multipart = null) : array
-    {
-        if (\is_array($multipart)) {
-            $data = array_merge(['operations' => json_encode($data)], $multipart);
-        }
-
-        return $this->postQuery($data, $headers);
-    }
-
-    public function mutate(Query $query, array $headers = [], array $multipart = null) : ResponseData
-    {
-        $response = $this->executeQuery($this->getMutationData($query), $headers, $multipart);
-
-        return new ResponseData($response, $query);
-    }
-
-    public function query(Query $query, array $headers = []) : ResponseData
-    {
-        $response = $this->executeQuery($this->getQueryData($query), $headers);
-
-        return new ResponseData($response, $query);
-    }
-
-    /**
-     * @return string
-     */
-    public function getBaseUrl() : string
-    {
-        return $this->baseUrl;
+        return \count(array_filter(array_keys($array), '\is_string')) > 0;
     }
 
     /**
@@ -168,6 +183,8 @@ abstract class Client
 
         return $result;
     }
+
+
 
     public function assertGraphQlFields(array $fields, Query $query) : void
     {
@@ -209,5 +226,20 @@ abstract class Client
         }
     }
 
-    abstract protected function postQuery(array $data, array $headers = []) : array;
+    private function fieldToString(Field $field) : string
+    {
+        $result = $field->getName();
+
+        if (!empty($field->getChildren())) {
+            $children = '';
+            foreach ($field->getChildren() as $child) {
+                $children .= $this->fieldToString($child);
+            }
+            $result .= sprintf(' { %s }', $children);
+        }
+
+        $result .= PHP_EOL;
+
+        return $result;
+    }
 }
